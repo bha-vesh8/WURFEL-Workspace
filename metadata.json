@@ -1,0 +1,6 @@
+{
+  "name": "WURFEL — Intelligent Technical Dossier Review",
+  "description": "WURFEL: AI-powered technical dossier checking platform for kitchen and wardrobe design projects to identify discrepancies, missing specifications, and costing inconsistencies before production.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
