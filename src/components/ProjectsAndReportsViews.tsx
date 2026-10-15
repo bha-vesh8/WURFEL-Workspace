@@ -613,7 +613,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
-            {systemStatus?.supportedFormats.map((sf, idx) => (
+            {(systemStatus?.supportedFormats ?? []).map((sf, idx) => (
               <tr key={idx} className="hover:bg-slate-50">
                 <td className="px-6 py-3 font-mono font-semibold text-slate-900">{sf.extension}</td>
                 <td className="px-4 py-3 text-slate-700">{sf.category}</td>

@@ -62,7 +62,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     );
   }
 
-  const maxCatCount = Math.max(1, ...data.issuesByCategory.map((c) => c.count));
+  const maxCatCount = Math.max(1, ...(data.issuesByCategory ?? []).map((c) => c.count));
 
   return (
     <div className="space-y-8">
@@ -302,11 +302,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </span>
           </div>
 
-          {data.issuesByCategory.length === 0 ? (
+          {(data.issuesByCategory ?? []).length === 0 ? (
             <p className="py-8 text-center text-xs text-slate-500">No findings recorded yet.</p>
           ) : (
             <div className="space-y-3.5">
-              {data.issuesByCategory.map((item) => {
+              {(data.issuesByCategory ?? []).map((item) => {
                 const widthPct = Math.max(6, Math.round((item.count / maxCatCount) * 100));
                 return (
                   <div key={item.category} className="space-y-1">
@@ -365,7 +365,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="rounded-xl border border-slate-200 bg-white p-6">
             <h2 className="text-base font-semibold text-slate-900">Recent Review Activity</h2>
             <div className="mt-4 divide-y divide-slate-100">
-              {data.recentActivity.slice(0, 5).map((act) => (
+              {(data.recentActivity ?? []).slice(0, 5).map((act) => (
                 <div key={act.id} className="py-2.5 first:pt-0 last:pb-0">
                   <div className="flex items-center justify-between text-xs">
                     <span className="font-semibold text-slate-800">{act.action}</span>

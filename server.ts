@@ -90,12 +90,27 @@ async function startServer() {
    * ======================================================================== */
   app.get('/api/system/status', (req, res) => {
     res.json({
-      apiKeyConfigured: isGeminiConfigured(),
+      aiProvider: 'OpenAI API',
       modelName: getConfiguredModelName(),
-      databasePath: 'data/wurfel.sqlite',
+      apiKeyConfigured: isGeminiConfigured(),
+      demoModeActive: !isGeminiConfigured(),
       maxUploadSizeMb: 50,
+      databasePath: 'data/wurfel.sqlite',
+      uploadsDir: 'data/uploads',
+      storageLocation: 'Local SQLite + disk',
+      sqliteReady: true,
       appName: 'WURFEL',
       version: '1.0.0',
+      supportedFormats: [
+        { extension: '.pdf', category: 'Document', supportLevel: 'Full Local Extraction', notes: 'Text extraction via pdf-parse; scanned pages fall back to Tesseract OCR.' },
+        { extension: '.docx', category: 'Document', supportLevel: 'Full Local Extraction', notes: 'Full paragraph, table and heading extraction via mammoth.' },
+        { extension: '.xlsx / .xls', category: 'Spreadsheet', supportLevel: 'Full Local Extraction', notes: 'All sheets read via SheetJS; costing tables parsed and structured.' },
+        { extension: '.csv', category: 'Spreadsheet', supportLevel: 'Full Local Extraction', notes: 'Comma/semicolon delimited files fully parsed into structured tables.' },
+        { extension: '.png / .jpg / .jpeg', category: 'Image', supportLevel: 'Preview + Metadata', notes: 'Metadata extracted locally; full drawing analysis requires Gemini Vision API.' },
+        { extension: '.dxf / .dwg', category: 'CAD Drawing', supportLevel: 'Preview + Metadata', notes: 'Geometry detected locally; deep analysis requires Gemini Vision API.' },
+        { extension: '.txt', category: 'Plain Text', supportLevel: 'Full Local Extraction', notes: 'Raw text read and indexed directly.' },
+        { extension: '.zip', category: 'Archive', supportLevel: 'Unsupported (Export Recommended)', notes: 'Unpack and upload individual files for analysis.' },
+      ],
     });
   });
 
@@ -106,21 +121,21 @@ async function startServer() {
         available: false,
         mode: 'Local Rules & Deterministic Engine Active',
         message:
-          'GEMINI_API_KEY is not configured in .env. WURFEL is operating in high-precision deterministic rules mode with instant validation and sample demo findings.',
+          'OPENAI_API_KEY is not configured in .env. WURFEL is operating in high-precision deterministic rules mode with instant validation and sample demo findings.',
       });
     }
 
     try {
       res.json({
         available: true,
-        mode: `Gemini Multimodal Active (${getConfiguredModelName()})`,
-        message: `Connected successfully to Gemini model ${getConfiguredModelName()} for deep cross-document contradiction detection.`,
+        mode: `OpenAI Active (${getConfiguredModelName()})`,
+        message: `Connected successfully to OpenAI model ${getConfiguredModelName()} for deep cross-document contradiction detection.`,
       });
     } catch (err: any) {
       res.json({
         available: false,
         mode: 'AI Connection Warning',
-        message: `Failed to ping Gemini API: ${err?.message || 'Check your API key and network connection.'}`,
+        message: `Failed to ping OpenAI API: ${err?.message || 'Check your API key and network connection.'}`,
       });
     }
   });
@@ -176,17 +191,45 @@ async function startServer() {
 
       const activities = queryAll<Record<string, any>>(
         db,
-        'SELECT * FROM activity_logs ORDER BY timestamp DESC LIMIT 10'
+        'SELECT * FROM activity_logs ORDER BY createdAt DESC LIMIT 10'
       ).map(mapActivityRow);
 
+      const projectsAnalysed = projects.filter((p) =>
+        ['Analysis Complete', 'Awaiting Review', 'Approved'].includes(p.status)
+      ).length;
+      const awaitingReview = projects.filter((p) => p.status === 'Awaiting Review').length;
+
+      // Severity counts as a keyed object (matches DashboardView expectation)
+      const severityCountsObj = {
+        Critical: sevCountMap['Critical'] ?? 0,
+        High: sevCountMap['High'] ?? 0,
+        Medium: sevCountMap['Medium'] ?? 0,
+        Low: sevCountMap['Low'] ?? 0,
+        Informational: sevCountMap['Informational'] ?? 0,
+      };
+
       res.json({
+        // Metrics block expected by DashboardView
+        metrics: {
+          totalProjects,
+          projectsAnalysed,
+          issuesDetected: totalFindings,
+          awaitingReview,
+        },
+        // Category distribution (DashboardView key: issuesByCategory)
+        issuesByCategory: categoryCounts,
+        // Severity breakdown as keyed object (DashboardView key: severityCounts)
+        severityCounts: severityCountsObj,
+        // Recent projects table
+        recentProjects: projects.slice(0, 5),
+        // Activity feed (DashboardView key: recentActivity)
+        recentActivity: activities,
+        // Legacy keys kept for backwards compat
         totalProjects,
         totalFindings,
         criticalFindings,
         approvedProjects,
         categoryCounts,
-        severityCounts,
-        recentProjects: projects.slice(0, 5),
         activityFeed: activities,
       });
     } catch (err: any) {
@@ -249,7 +292,7 @@ async function startServer() {
 
       const activities = queryAll<Record<string, any>>(
         db,
-        'SELECT * FROM activity_logs WHERE projectId = ? ORDER BY timestamp DESC LIMIT 20',
+        'SELECT * FROM activity_logs WHERE projectId = ? ORDER BY createdAt DESC LIMIT 20',
         [id]
       ).map(mapActivityRow);
 

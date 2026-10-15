@@ -431,15 +431,15 @@ export function App() {
                 className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs hover:bg-slate-50"
               >
                 <div className="flex h-6 w-6 items-center justify-center rounded-full bg-slate-900 font-semibold text-[11px] text-white">
-                  ER
+                  BC
                 </div>
-                <span className="hidden font-medium text-slate-800 md:inline">Elena Rostova</span>
+                <span className="hidden font-medium text-slate-800 md:inline">Bhaskara Char</span>
               </button>
 
               {profileOpen && (
                 <div className="absolute right-0 mt-2 w-56 rounded-xl border border-slate-200 bg-white p-3 shadow-lg text-xs space-y-2">
                   <div className="border-b border-slate-100 pb-2">
-                    <div className="font-semibold text-slate-900">Elena Rostova</div>
+                    <div className="font-semibold text-slate-900">Bhaskara Char</div>
                     <div className="text-[11px] text-slate-500">Lead Technical Reviewer (Demo)</div>
                   </div>
                   <button
